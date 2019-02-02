@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+
+    <meta name="apple-mobile-web-app-title" content="Apertura Cancelli">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+
+    <title>Apertura Cancelli</title>
+
+    <style>
+
+     body {
+        font-family: "Segoe UI",Arial,sans-serif;
+        font-size: 200%;
+        background-color:  #2B303A;
+        color: white;
+        border: none;
+      }
+
+      .grid-container {
+        /* background-color: red; */
+        height: 95vh;
+      }
+
+      .grid-item {
+        margin: 0 auto;
+        text-align: center;
+        padding: 0.1em;
+        letter-spacing: 2px;
+        vertical-align: middle;
+        border-radius: 25px;
+        color: aliceblue;
+        display: block;
+        max-width: 500px;
+        margin-bottom: 0.3em;
+      }
+
+      .header {
+        padding: 0.1em;
+        font-size: 90%;
+        font-weight: bold;
+      }
+
+      .small, .big {
+        height: 33vh;
+      }
+
+      .small {
+        background: #3A7CA5;
+      }
+
+      .big {
+        background: #9D4028;
+      }
+
+      a {
+        text-decoration: none; /* no underline */
+        color: aliceblue;
+        display: block;
+        height: 100%;
+      }
+
+      div.grid-item:active{
+        background: #3F1F17;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+      }
+
+      #footerContainer {
+        right: 0;
+        bottom: 0;
+        position: absolute;
+        left: 0;
+        padding: 0.5rem;
+        margin: 0 auto;
+        margin-top: 1em;
+        text-align: center;
+        font-size: 40%;
+        max-width: 500px;
+      }
+
+
+      .result {
+        font-size: 70%;
+        color: #EDF060;
+        font-weight: bold;
+      }
+
+      .info {
+        font-size: 50%;
+        color: #F1FCF2;
+        text-align: left;
+        margin: 0 auto;
+      }
+
+      .horizontalFlex {
+        display: flex;
+        justify-content: center;
+      }
+
+      .verticalFlex {
+        height: 100%;
+        display: flex;
+        flex-direction:column;
+        justify-content: center;
+      }
+
+      .buttonTitle {
+        font-size: 150%;
+        font-weight: bold;
+      }
+    </style>
+
+    <script>
+      const cancellinoId = 0;
+      const cancelloneId = 1;
+      const ajaxTimeout  = 10;
+      var myTimeout = undefined;
+      var timeoutCtr = 0;
+
+      function xhrTimeoutCB(htmlElemName) {
+
+        myTimeout = undefined;
+
+        if (timeoutCtr++ >= ajaxTimeout) {
+          document.getElementById(htmlElemName).innerHTML = "Timeout";
+        } else {
+          document.getElementById(htmlElemName).innerHTML = (ajaxTimeout-timeoutCtr) + "...";
+          myTimeout = setTimeout(xhrTimeoutCB, 1000, htmlElemName);
+        }
+      }
+
+      function asyncOpen(gateId) {
+        var xhttp = new XMLHttpRequest();
+        var htmlElemName = "res" + gateId;
+
+        if (myTimeout !== undefined) {
+          clearTimeout(myTimeout);
+          myTimeout = undefined;
+        }
+
+        document.getElementById(htmlElemName).innerHTML = "Apertura in Corso...";
+
+        timeoutCtr = 0;
+        myTimeout = setTimeout(xhrTimeoutCB, 1000, htmlElemName);
+
+        xhttp.onloadend = function() {
+          // 4 == DONE
+          if (this.readyState === 4) {
+            clearTimeout(myTimeout);
+            myTimeout = undefined;
+            if (this.status === 200 && this.responseText == "0") {
+              document.getElementById(htmlElemName).innerHTML = "Aperto";
+              getJsonData();
+            }
+            else {
+              var errMsgHtml;
+
+              errMsgHtml = "Err: " + this.status;
+              errMsgHtml += "<br>";
+              errMsgHtml += "Resp: " + this.responseText;
+
+              document.getElementById(htmlElemName).innerHTML = errMsgHtml;
+            }
+          }
+        };
+
+        xhttp.open("POST", "open?id=" + gateId, true);
+        xhttp.send();
+      }
+
+      function getJsonData() {
+        var xhttp = new XMLHttpRequest();
+
+        var timeOn = NaN;
+        var currentState = NaN;
+        var fwVersion = "ERR";
+        var fwUptime = "ERR";
+        var last = [];
+        var ctr = [];
+
+        xhttp.onloadend = function() {
+          // 4 == DONE
+          if (this.readyState === 4 && this.status === 200) {
+
+            try {
+              var data = JSON.parse(this.responseText);
+            } catch (e) {
+              document.getElementById("res0").innerHTML = "Errore JSON";
+              return;
+            }
+
+            //currentState = data.currentState;
+            fwUptime = data.fwUptime;
+            fwVersion = data.fwVersion;
+            last = data.lastOpened.split(";");
+            ctr = data.openCtr.split(";");
+
+
+            document.getElementById("res0").innerHTML = "";
+          } else {
+            document.getElementById("res0").innerHTML = "Errore lettura dati";
+          }
+
+          document.getElementById("fwUptime").innerHTML = fwUptime;
+          document.getElementById("fwVersion").innerHTML = fwVersion;
+
+          document.getElementById("last0").innerHTML = last[0];
+          document.getElementById("last1").innerHTML = last[1];
+          document.getElementById("ctr0").innerHTML = ctr[0];
+          document.getElementById("ctr1").innerHTML = ctr[1];
+
+          setTimeout(getJsonData, 30000);
+        };
+
+        xhttp.open("GET", "jsonData", true);
+
+        xhttp.send();
+      }
+
+      // without jQuery (doesn't work in older IEs)
+      document.addEventListener('DOMContentLoaded', function(){
+        getJsonData();
+      }, false);
+    </script>
+  </head>
+
+  <body>
+    <div class="grid-container">
+
+      <div class="grid-item header">Apertura cancelli</div>
+
+      <div class="grid-item small">
+        <a href="javascript:asyncOpen(cancellinoId);">
+          <nav class="verticalFlex">
+            <div class="buttonTitle">Small</div>
+            <div id="res0" class="result">&nbsp;</div>
+            <div class="info">
+                (last
+                <span id="last0">&nbsp;</span>
+                &nbsp;&nbsp;  #
+                <span id="ctr0">&nbsp;</span>)
+            </div>
+          </nav>
+        </a>
+      </div>
+
+      <div class="grid-item big ">
+        <a href="javascript:asyncOpen(cancelloneId);">
+          <nav class="verticalFlex">
+            <div class="buttonTitle"> Big </div>
+            <div id="res1" class="result">&nbsp;</div>
+            <div class="info">
+                (last
+                <span id="last1">&nbsp;</span>
+                &nbsp;&nbsp;  #
+                <span id="ctr1">&nbsp;</span>)
+            </div>
+          </nav>
+        </a>
+      </div>
+
+      <div id="footerContainer">
+        Up&nbsp;<span id="fwUptime"></span>
+        <br>
+        <span id="fwVersion"></span> - <b>(C) 2018 Fa&amp;Desfa Fiobe</b> - 'Ntal pica mia l'sul
+      </div>
+    </div>
+  </body>
+</html>

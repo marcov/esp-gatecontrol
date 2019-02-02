@@ -1,0 +1,10 @@
+/.piolibdeps/
+/.pioenvs/
+*.pyc
+*.swp
+*.kdev4
+/tags
+/src/chtml/*.c
+/src/chtml/*.h
+/src/credentials.cc
+/html/jsonData

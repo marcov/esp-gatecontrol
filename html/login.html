@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+
+    <title>Apertura Cancelli</title>
+
+    <!-- the following is needed for the media queries to work correctly -->
+    <meta name="viewport" content="width=device-width">
+    <style>
+
+      body {
+        font-family: "Segoe UI",Arial,sans-serif;
+        font-size: 100%;
+        background: none;
+        border: none;
+      }
+
+      .grid-container {
+        display: block;
+      }
+
+      .grid-item {
+        padding: 0.1em;
+        letter-spacing: 2px;
+        border-radius: 4px;
+        margin: 0 auto;
+        max-width: 500px;
+        margin-top: 1em;
+      }
+
+      form {
+        display: flex;
+        justify-content: center;
+        margin: 0 auto;
+      }
+
+      form > ul {
+        padding-left: 0em;
+      }
+
+      form > ul > li {
+        display: flex;
+        flex-direction: row;
+        list-style: none;
+        margin-bottom: 0.5em;
+      }
+
+      form > ul > li > label {
+        width: 100px;
+      }
+
+      button {
+        border: none;
+        background-color: cadetblue;
+        color: white;
+        font-size: 150%;
+        border-radius: 3px;
+        margin-top: 0.5em;
+        width: 100%;
+      }
+
+      .header {
+        padding: 0.2em;
+        font-size: 150%;
+        font-weight: bold;
+        color:  #3F1F17;
+        height: 1em;
+        margin: 0 auto;
+        text-align: center;
+      }
+
+      a {
+        text-decoration: none; /* no underline */
+        color: aliceblue;
+      }
+    </style>
+
+  </head>
+
+  <body>
+
+    <div class="header">Apertura Cancelli</div>
+    <div class="grid-container">
+
+      <div class="grid-item" style="text-align: center;">
+          Effettuare il login
+      </div>
+
+      <div class="grid-item" style="background-color: aliceblue;">
+        <form action="login" method="POST">
+          <ul>
+            <li>
+              <label>Username</label>
+              <input type="text" name="USERNAME">
+            </li>
+            <li>
+              <label>Password</label>
+              <input type="password" name="PASSWORD">
+            </li>
+            <li>
+              <button name="SUBMIT">Invia</button>
+            </li>
+          </ul>
+        </form>
+      </div>
+
+    </div>
+
+  </body>
+
+</html>
