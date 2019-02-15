@@ -1,5 +1,5 @@
 ## ESP8266 based gates opening control
 
-### Screenshot
+### Screenshot (mobile website)
 
-![screenshot](screenshot.png)
+<img src="https://raw.githubusercontent.com/marcov/esp-gatecontrol/master/screenshot.png" height="600px">
