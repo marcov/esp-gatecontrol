@@ -7,10 +7,18 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 
+     <meta
+      name="viewport"
+      content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-tap-highlight" content="no" />
+
+    <link rel="manifest" href="manifest.json">
+
     <meta name="apple-mobile-web-app-title" content="Apertura Cancelli">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
 
     <title>Apertura Cancelli</title>
 
@@ -49,7 +57,7 @@
       }
 
       .small, .big {
-        height: 33vh;
+        height: 25vh;
       }
 
       .small {
@@ -82,10 +90,9 @@
         margin: 0 auto;
         margin-top: 1em;
         text-align: center;
-        font-size: 40%;
+        font-size: 30%;
         max-width: 500px;
       }
-
 
       .result {
         font-size: 70%;
@@ -117,119 +124,6 @@
         font-weight: bold;
       }
     </style>
-
-    <script>
-      const cancellinoId = 0;
-      const cancelloneId = 1;
-      const ajaxTimeout  = 10;
-      var myTimeout = undefined;
-      var timeoutCtr = 0;
-
-      function xhrTimeoutCB(htmlElemName) {
-
-        myTimeout = undefined;
-
-        if (timeoutCtr++ >= ajaxTimeout) {
-          document.getElementById(htmlElemName).innerHTML = "Timeout";
-        } else {
-          document.getElementById(htmlElemName).innerHTML = (ajaxTimeout-timeoutCtr) + "...";
-          myTimeout = setTimeout(xhrTimeoutCB, 1000, htmlElemName);
-        }
-      }
-
-      function asyncOpen(gateId) {
-        var xhttp = new XMLHttpRequest();
-        var htmlElemName = "res" + gateId;
-
-        if (myTimeout !== undefined) {
-          clearTimeout(myTimeout);
-          myTimeout = undefined;
-        }
-
-        document.getElementById(htmlElemName).innerHTML = "Apertura in Corso...";
-
-        timeoutCtr = 0;
-        myTimeout = setTimeout(xhrTimeoutCB, 1000, htmlElemName);
-
-        xhttp.onloadend = function() {
-          // 4 == DONE
-          if (this.readyState === 4) {
-            clearTimeout(myTimeout);
-            myTimeout = undefined;
-            if (this.status === 200 && this.responseText == "0") {
-              document.getElementById(htmlElemName).innerHTML = "Aperto";
-              getJsonData();
-            }
-            else {
-              var errMsgHtml;
-
-              errMsgHtml = "Err: " + this.status;
-              errMsgHtml += "<br>";
-              errMsgHtml += "Resp: " + this.responseText;
-
-              document.getElementById(htmlElemName).innerHTML = errMsgHtml;
-            }
-          }
-        };
-
-        xhttp.open("POST", "open?id=" + gateId, true);
-        xhttp.send();
-      }
-
-      function getJsonData() {
-        var xhttp = new XMLHttpRequest();
-
-        var timeOn = NaN;
-        var currentState = NaN;
-        var fwVersion = "ERR";
-        var fwUptime = "ERR";
-        var last = [];
-        var ctr = [];
-
-        xhttp.onloadend = function() {
-          // 4 == DONE
-          if (this.readyState === 4 && this.status === 200) {
-
-            try {
-              var data = JSON.parse(this.responseText);
-            } catch (e) {
-              document.getElementById("res0").innerHTML = "Errore JSON";
-              return;
-            }
-
-            //currentState = data.currentState;
-            fwUptime = data.fwUptime;
-            fwVersion = data.fwVersion;
-            last = data.lastOpened.split(";");
-            ctr = data.openCtr.split(";");
-
-
-            document.getElementById("res0").innerHTML = "";
-          } else {
-            document.getElementById("res0").innerHTML = "Errore lettura dati";
-          }
-
-          document.getElementById("fwUptime").innerHTML = fwUptime;
-          document.getElementById("fwVersion").innerHTML = fwVersion;
-
-          document.getElementById("last0").innerHTML = last[0];
-          document.getElementById("last1").innerHTML = last[1];
-          document.getElementById("ctr0").innerHTML = ctr[0];
-          document.getElementById("ctr1").innerHTML = ctr[1];
-
-          setTimeout(getJsonData, 30000);
-        };
-
-        xhttp.open("GET", "jsonData", true);
-
-        xhttp.send();
-      }
-
-      // without jQuery (doesn't work in older IEs)
-      document.addEventListener('DOMContentLoaded', function(){
-        getJsonData();
-      }, false);
-    </script>
   </head>
 
   <body>
@@ -273,5 +167,116 @@
         <span id="fwVersion"></span> - <b>(C) 2018 Fa&amp;Desfa Fiobe</b> - 'Ntal pica mia l'sul
       </div>
     </div>
+
+    <script>
+      const cancellinoId = 0;
+      const cancelloneId = 1;
+      const ajaxTimeout  = 10;
+      var myTimeout = undefined;
+      var timeoutCtr = 0;
+
+      function xhrTimeoutCB(htmlElemName) {
+        myTimeout = undefined;
+
+        if (timeoutCtr++ >= ajaxTimeout) {
+          document.getElementById(htmlElemName).innerHTML = "Timeout";
+        } else {
+          document.getElementById(htmlElemName).innerHTML = (ajaxTimeout-timeoutCtr) + "...";
+          myTimeout = setTimeout(xhrTimeoutCB, 1000, htmlElemName);
+        }
+      }
+
+      function asyncOpen(gateId) {
+        var xHttp = new XMLHttpRequest();
+        var htmlElemName = "res" + gateId;
+
+        if (myTimeout !== undefined) {
+          clearTimeout(myTimeout);
+          myTimeout = undefined;
+        }
+
+        document.getElementById(htmlElemName).innerHTML = "Apertura in Corso...";
+
+        timeoutCtr = 0;
+        myTimeout = setTimeout(xhrTimeoutCB, 1000, htmlElemName);
+
+        xHttp.onloadend = function() {
+          // 4 == DONE
+          if (this.readyState === 4) {
+            clearTimeout(myTimeout);
+            myTimeout = undefined;
+            if (this.status === 200 && this.responseText == "0") {
+              document.getElementById(htmlElemName).innerHTML = "Aperto";
+              getJsonData();
+            }
+            else {
+              var errMsgHtml;
+
+              errMsgHtml = "Err: " + this.status;
+              errMsgHtml += "<br>";
+              errMsgHtml += "Resp: " + this.responseText;
+
+              document.getElementById(htmlElemName).innerHTML = errMsgHtml;
+            }
+          }
+        };
+
+        xHttp.open("POST", "open?id=" + gateId, true);
+        xHttp.send();
+      }
+
+      function getJsonData() {
+        var xHttp = new XMLHttpRequest();
+
+        var timeOn = NaN;
+        var currentState = NaN;
+        var fwVersion = "ERR";
+        var fwUptime = "ERR";
+        var last = [];
+        var ctr = [];
+
+        xHttp.onloadend = function() {
+          // 4 == DONE
+          if (this.readyState === 4 && this.status === 200) {
+            try {
+              var data = JSON.parse(this.responseText);
+            } catch (e) {
+              document.getElementById("res0").innerHTML = "Errore JSON";
+              return;
+            }
+
+            //currentState = data.currentState;
+            fwUptime = data.fwUptime;
+            fwVersion = data.fwVersion;
+            last = data.lastOpened.split(";");
+            ctr = data.openCtr.split(";");
+
+            document.getElementById("res0").innerHTML = "";
+          } else {
+            document.getElementById("res0").innerHTML = "Errore lettura dati";
+          }
+
+          document.getElementById("fwUptime").innerHTML = fwUptime;
+          document.getElementById("fwVersion").innerHTML = fwVersion;
+
+          document.getElementById("last0").innerHTML = last[0];
+          document.getElementById("last1").innerHTML = last[1];
+          document.getElementById("ctr0").innerHTML = ctr[0];
+          document.getElementById("ctr1").innerHTML = ctr[1];
+
+          setTimeout(getJsonData, 30000);
+        };
+
+        xHttp.open("GET", "jsonData", true);
+
+        xHttp.send();
+      }
+
+      // without jQuery (doesn't work in older IEs)
+      document.addEventListener('DOMContentLoaded', function(){
+        getJsonData();
+      }, false);
+    </script>
+
   </body>
 </html>

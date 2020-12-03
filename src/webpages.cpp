@@ -10,6 +10,7 @@ extern "C" {
 #  include "apple_touch_icon_png.h"
 #  include "favicon_16x16_png.h"
 #  include "favicon_32x32_png.h"
+#  include "manifest_json.h"
 #  include "config.h"
 }
 
@@ -18,7 +19,7 @@ extern "C" {
 static ESP8266WebServer  *pHttpServer;
 
 //Check if header is present and correct
-static bool is_authentified(){
+static bool isAuthenticated(){
     if (pHttpServer->hasHeader("Cookie")) {
         Serial.print("Found cookie: ");
         String cookie = pHttpServer->header("Cookie");
@@ -29,17 +30,21 @@ static bool is_authentified(){
         }
     }
 
-    Serial.println("Authentification Failed (cookie not found)");
+    Serial.println("Authentication Failed (cookie not found)");
     return false;
+}
+
+static void httpRedirect(const char *path) {
+    pHttpServer->sendHeader("Location", path);
+    pHttpServer->sendHeader("Cache-Control","no-cache");
+    pHttpServer->send(301);
 }
 
 static void handleLogout(void)
 {
     Serial.println("Disconnection");
-    pHttpServer->sendHeader("Location","/login");
-    pHttpServer->sendHeader("Cache-Control","no-cache");
     pHttpServer->sendHeader("Set-Cookie", "espSessionId=0; expires=Thu, 01 Jan 1970 00:00:00 GMT");
-    pHttpServer->send(301);
+    httpRedirect("/login");
     return;
 }
 
@@ -74,14 +79,10 @@ static void handleLogin(){
     pHttpServer->send_P(200, "text/html", (const char *)login_html, login_html_size);
 }
 
-
 static void serveMainPage(void)
 {
-    if (!is_authentified()){
-        String header;
-        pHttpServer->sendHeader("Location","/login");
-        pHttpServer->sendHeader("Cache-Control","no-cache");
-        pHttpServer->send(301);
+    if (!isAuthenticated()){
+        httpRedirect("/login");
         return;
     }
     pHttpServer->send_P(200, "text/html", (const char *)index_html, index_html_size);
@@ -89,11 +90,8 @@ static void serveMainPage(void)
 
 static void serveOpenGate(void)
 {
-    if (!is_authentified()){
-        String header;
-        pHttpServer->sendHeader("Location","/login");
-        pHttpServer->sendHeader("Cache-Control","no-cache");
-        pHttpServer->send(301);
+    if (!isAuthenticated()){
+        httpRedirect("/login");
         return;
     }
 
@@ -106,36 +104,33 @@ static void serveOpenGate(void)
 
 static void serveReboot(void)
 {
-    if (!is_authentified()){
-        String header;
-        pHttpServer->sendHeader("Location","/login");
-        pHttpServer->sendHeader("Cache-Control","no-cache");
-        pHttpServer->send(301);
+    if (!isAuthenticated()){
+        httpRedirect("/login");
         return;
     }
     pHttpServer->send(200, "text/plain", "Rebooting...");
     ESP.restart();  // normal reboot
 }
 
-static void serveFile(const char *dataPtr, unsigned size) {
+static void serveFile(const char *dataPtr, unsigned size, const char* contentType) {
     // 1 year
     pHttpServer->sendHeader("Cache-Control", "public, max-age=31536000");
-    pHttpServer->send_P(200, "text/html", dataPtr, size);
+    pHttpServer->send_P(200, contentType, dataPtr, size);
 }
 
 
 static void serveAppleTouchIcon() {
-   serveFile((const char *)apple_touch_icon_png, apple_touch_icon_png_size);
+   serveFile((const char *)apple_touch_icon_png, apple_touch_icon_png_size, "image/apng");
 }
 
 
 static void serveFavIcon16() {
-   serveFile((const char *)favicon_16x16_png, favicon_16x16_png_size);
+   serveFile((const char *)favicon_16x16_png, favicon_16x16_png_size, "image/apng");
 }
 
 
 static void serveFavIcon32() {
-   serveFile((const char *)favicon_32x32_png, favicon_32x32_png_size);
+   serveFile((const char *)favicon_32x32_png, favicon_32x32_png_size, "image/apng");
 }
 
 
@@ -164,31 +159,42 @@ static String secondsToTime(unsigned s, bool addSeconds) {
 
 static void serveJsonData(void)
 {
-    StaticJsonBuffer<512> jsonBuffer;
-    ArduinoJson::JsonObject& root = jsonBuffer.createObject();
-
-    root["fwUptime"]  =  secondsToTime(gateCtl.uptime, false);
-    root["fwVersion"] = "v" FW_VERSION " " __DATE__;
-
+    ArduinoJson::StaticJsonDocument<512> jsonDoc;
     String tmp;
 
+    //
+    // FW / uptime info
+    //
+    jsonDoc["fwUptime"]  =  secondsToTime(gateCtl.uptime, false);
+    jsonDoc["fwVersion"] = "v" FW_VERSION " " __DATE__;
+
+    //
+    // Gates Info
+    //
     for (auto v : gateCtl.lastOpened) {
         tmp += secondsToTime(v, false) + ";";
     }
-
-    root["lastOpened"] = tmp;
+    jsonDoc["lastOpened"] = tmp;
 
     tmp = "";
-
     for (auto v : gateCtl.openCtr) {
         tmp += String(v) + ";";
     }
+    jsonDoc["openCtr"] = tmp;
 
-    root["openCtr"] = tmp;
+    //
+    // Puse Info
+    //
+    jsonDoc["pulseCounter"] = String(gateCtl.lightPulseCounter);
+    jsonDoc["timeBetweenPulses"] = String(gateCtl.timeBetweenPulses);
+    jsonDoc["timeSincePulse"] = String(gateCtl.timeSincePulse);
 
-    String msg;
-    root.printTo(msg);
-    pHttpServer->send(200, "text/json", msg);
+    //
+    // Serialize and send
+    //
+    tmp = "";
+    serializeJson(jsonDoc, tmp);
+    pHttpServer->send(200, "text/json", tmp);
 }
 
 void webpagesInit(void)

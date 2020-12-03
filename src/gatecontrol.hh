@@ -3,8 +3,8 @@
 
 #include "config.h"
 
-class GateControl {
-
+class GateControl
+{
 private:
     void relayPulse(unsigned pin)
     {
@@ -14,7 +14,6 @@ private:
         digitalWrite(pin, HIGH);
         digitalWrite(LED_PIN, HIGH);
     }
-
 
 public:
     typedef enum {
@@ -26,6 +25,13 @@ public:
     unsigned uptime;
     unsigned lastOpened[numOfGates];
     unsigned openCtr[numOfGates];
+    //
+    // Light pulse
+    //
+    unsigned long lightPulseCounter;
+    unsigned long timeBetweenPulses;
+    unsigned long lastPulseTs;
+    unsigned long timeSincePulse;
 
     void updateCounters() {
         uptime++;
@@ -33,6 +39,7 @@ public:
         for (auto &t :lastOpened) {
             t++;
         }
+        timeSincePulse++;
 #if defined(MQTT_ENABLED)
     String msg(uptimeSeconds);
 
@@ -40,9 +47,7 @@ public:
 #endif
     }
 
-
     int open(gate_type_t theGate) {
-
         unsigned pin;
 
         switch (theGate) {

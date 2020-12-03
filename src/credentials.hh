@@ -1,9 +1,7 @@
-#ifndef __CREDENTIALS_HH__
-#define __CREDENTIALS_HH__
+#pragma once
 
-
-class Credentials {
-
+class Credentials
+{
 public:
     static const char *wifiSsid;
     static const char *wifiPasswd;
@@ -13,5 +11,3 @@ public:
     static const char *httpUsername;
     static const char *httpPassword;
 };
-
-#endif /* #ifndef __CREDENTIALS_HH__ */
