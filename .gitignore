@@ -8,3 +8,6 @@
 /src/chtml/*.h
 /src/credentials.cc
 /html/jsonData
+/.pio/
+/.tags
+/compile_commands.json
