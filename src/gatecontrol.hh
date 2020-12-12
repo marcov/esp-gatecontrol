@@ -9,10 +9,10 @@ private:
     void relayPulse(unsigned pin)
     {
         digitalWrite(pin, LOW);
-        digitalWrite(LED_PIN, LOW);
+        digitalWrite(GPIO_LED, LOW);
         delay(RELAY_PULSE_MS);
         digitalWrite(pin, HIGH);
-        digitalWrite(LED_PIN, HIGH);
+        digitalWrite(GPIO_LED, HIGH);
     }
 
 public:

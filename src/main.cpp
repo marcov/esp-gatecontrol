@@ -31,6 +31,8 @@ extern "C" {
 ////////////////////////////////////////////////////////////////////////////////
 
 GateControl gateCtl;
+static constexpr unsigned int k_MaxConnectTime = 1000UL;
+WIFI* g_WIFI;
 
 #if defined(MQTT_ENABLED)
 const char *mqtt_gate_open_topic = "/gate/open";
@@ -101,13 +103,40 @@ LightSensorIsr (
     detachInterrupt(digitalPinToInterrupt(LIGHT_SENSOR_PIN));
 }
 
-void setup(void)
+static
+void
+ConnectedCallback (
+    void
+    )
 {
-    digitalWrite(LED_PIN,  HIGH);
+    unsigned int originalState;
+
+    originalState = digitalRead(GPIO_LED);
+
+    for (int i = 0; i < 4; i++)
+    {
+        //
+        // Flash led to say we have just connected.
+        //
+        digitalWrite(GPIO_LED, (i % 2) ? originalState : !originalState);
+        delay(100);
+    }
+
+    digitalWrite(GPIO_LED, originalState);
+}
+
+void
+setup (
+    void
+    )
+{
+    g_WIFI = new WIFI(false, true, Credentials::wifiSsid,Credentials::wifiPasswd, k_MaxConnectTime);
+
+    digitalWrite(GPIO_LED,  HIGH);
     digitalWrite(CANCELLINO_PIN, HIGH);
     digitalWrite(CANCELLONE_PIN, HIGH);
 
-    pinMode(LED_PIN,        OUTPUT);
+    pinMode(GPIO_LED,        OUTPUT);
     pinMode(CANCELLINO_PIN, OUTPUT);
     pinMode(CANCELLONE_PIN, OUTPUT);
     Isr = ISR_WAIT;
@@ -120,15 +149,19 @@ void setup(void)
 
     for (unsigned i = 0; i < 10; i++)
     {
-        digitalWrite(LED_PIN,  !digitalRead(LED_PIN));
+        digitalWrite(GPIO_LED,  !digitalRead(GPIO_LED));
         delay(100);
     }
 
-    digitalWrite(LED_PIN,  HIGH);
+    digitalWrite(GPIO_LED,  HIGH);
 
-    Serial.println("....Started up!");
+    Serial.println("....starting up");
 
-    wifiSetup(false, true, Credentials::wifiSsid, Credentials::wifiPasswd);
+    g_WIFI->Connect(5000);
+    if (g_WIFI->IsConnected())
+    {
+        ConnectedCallback();
+    }
 
 #if defined(MQTT_ENABLED)
     mqtt_setup(&mqtt_cfg);
@@ -145,7 +178,10 @@ void setup(void)
     Serial.println("setup done");
 }
 
-void loop(void)
+void
+loop (
+    void
+    )
 {
     static unsigned long lastIsrTime = 0;
     unsigned now;
@@ -153,17 +189,7 @@ void loop(void)
 
     wdtKick();
 
-    if (WiFi.status() != WL_CONNECTED)
-    {
-        unsigned prev_state = digitalRead(LED_PIN);
-
-        wifiSetup(false, true, Credentials::wifiSsid, Credentials::wifiPasswd);
-
-        // flash led to say we have just connected...?
-        digitalWrite(LED_PIN, !prev_state);
-        delay(100);
-        digitalWrite(LED_PIN, prev_state);
-    }
+    g_WIFI->Loop(ConnectedCallback);
 
 #if defined(MQTT_ENABLED)
     if (mqtt_connected) {
