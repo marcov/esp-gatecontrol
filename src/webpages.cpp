@@ -3,6 +3,7 @@
 #include "ArduinoJson.h"
 #include "credentials.hh"
 #include "gatecontrol.hh"
+#include "energymeter.hh"
 
 extern "C" {
 #  include "index_html.h"
@@ -156,8 +157,11 @@ static String secondsToTime(unsigned s, bool addSeconds) {
     return res;
 }
 
-
-static void serveJsonData(void)
+static
+void
+serveJsonData (
+    void
+    )
 {
     ArduinoJson::StaticJsonDocument<512> jsonDoc;
     String tmp;
@@ -182,12 +186,7 @@ static void serveJsonData(void)
     }
     jsonDoc["openCtr"] = tmp;
 
-    //
-    // Puse Info
-    //
-    jsonDoc["pulseCounter"] = String(gateCtl.lightPulseCounter);
-    jsonDoc["timeBetweenPulses"] = String(gateCtl.timeBetweenPulses);
-    jsonDoc["timeSincePulse"] = String(gateCtl.timeSincePulse);
+    EnergyMeter::GetInstance()->GetCounters(jsonDoc);
 
     //
     // Serialize and send
@@ -195,6 +194,40 @@ static void serveJsonData(void)
     tmp = "";
     serializeJson(jsonDoc, tmp);
     pHttpServer->send(200, "text/json", tmp);
+}
+
+static
+void
+serveMetrics (
+    void
+    )
+{
+    String content;
+    unsigned long pulseCounter;
+    unsigned long timeBetweenPulses;
+    unsigned long timeSinceLastPulse;
+
+    EnergyMeter::GetInstance()->GetCounters(&pulseCounter,
+                                            &timeBetweenPulses,
+                                            &timeSinceLastPulse);
+
+    content = "# HELP home_energy_time_between_pulses Time in ms between the last two pulses.\n";
+    content += "# TYPE home_energy_time_between_pulses gauge\n";
+    content += "home_energy_time_between_pulses " + String(timeBetweenPulses) + "\n";
+
+    content += "# HELP home_energy_time_since_last_pulse Time in ms since last observed pulse.\n";
+    content += "# TYPE home_energy_time_since_last_pulse gauge\n";
+    content += "home_energy_time_since_last_pulse " + String(timeSinceLastPulse) + "\n";
+
+    content += "# HELP home_energy_pulse_counter The number of pulses measured.\n";
+    content += "# TYPE home_energy_pulse_counter counter\n";
+    content += "home_energy_pulse_counter " + String(pulseCounter) + "\n";
+
+    content += "# HELP home_energy_uptime The system uptime in seconds.\n";
+    content += "# TYPE home_energy_uptime counter\n";
+    content += "home_energy_uptime " + String(gateCtl.uptime) + "\n";
+
+    pHttpServer->send(200, "text/plain", content);
 }
 
 void webpagesInit(void)
@@ -209,7 +242,8 @@ void webpagesInit(void)
         {"/open",   serveOpenGate},
         {"/login",  handleLogin},
         {"/logout", handleLogout},
-        {"/jsonData",   serveJsonData},
+        {"/jsonData", serveJsonData},
+        {"/metrics", serveMetrics},
         {"/apple-touch-icon.png", serveAppleTouchIcon},
         {"/favicon-16x16.png",    serveFavIcon16},
         {"/favicon-32x32.png",    serveFavIcon32},

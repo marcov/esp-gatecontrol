@@ -14,19 +14,12 @@ extern "C" {
 #include "credentials.hh"
 #include "wifi.h"
 #include "gatecontrol.hh"
+#include "energymeter.hh"
 
 #define WDT_TIMEOUT_MS              30000
 #define MQTT_HB_PERIOD_S            60
 //#define MQTT_ENABLED
 #define MQTT_CONNECT_TRY_MS         10000
-
-//
-// Energy meter max allowed pulse rate
-//
-#define WATTHOURS_MAX               5000
-#define WH_FOR_ONE_PULSE            10
-#define PULSES_PER_HOUR_MAX         (WATTHOURS_MAX / WH_FOR_ONE_PULSE)
-#define PULSE_HOLDOFF_MS            ((3600uL * 1000uL) / PULSES_PER_HOUR_MAX)
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -61,17 +54,17 @@ static void         mqttOpenCb(unsigned char *payload, unsigned int length);
 
 static Ticker uptimeCtrTimer;
 
-static enum
-{
-    ISR_WAIT,
-    ISR_ACTIVE,
-    ISR_HOLD,
-} Isr;
-
 /******************************************************************************/
 
-static void  uptimeCtrCb(void) {
+static
+void
+uptimeCtrCb (
+    void
+    )
+{
     gateCtl.updateCounters();
+
+    EnergyMeter::GetInstance()->IncrementCounters();
 
 #if defined(MQTT_ENABLED)
     if (gateCtl.uptime % MQTT_HB_PERIOD_S == 0) {
@@ -92,16 +85,6 @@ static void mqttOpenCb(unsigned char *payload, unsigned int length)
     mqtt_async_publish(mqtt_gate_open_topic, (res == 0) ? "OK" : "FAIL");
 }
 #endif
-
-static
-void
-ICACHE_RAM_ATTR
-LightSensorIsr (
-    )
-{
-    Isr = ISR_ACTIVE;
-    detachInterrupt(digitalPinToInterrupt(LIGHT_SENSOR_PIN));
-}
 
 static
 void
@@ -131,6 +114,10 @@ setup (
     )
 {
     g_WIFI = new WIFI(false, true, Credentials::wifiSsid,Credentials::wifiPasswd, k_MaxConnectTime);
+    //
+    // Force instantiation here.
+    //
+    EnergyMeter::GetInstance();
 
     digitalWrite(GPIO_LED,  HIGH);
     digitalWrite(CANCELLINO_PIN, HIGH);
@@ -139,9 +126,11 @@ setup (
     pinMode(GPIO_LED,        OUTPUT);
     pinMode(CANCELLINO_PIN, OUTPUT);
     pinMode(CANCELLONE_PIN, OUTPUT);
-    Isr = ISR_WAIT;
+
     pinMode(LIGHT_SENSOR_PIN, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(LIGHT_SENSOR_PIN), LightSensorIsr, RISING);
+    attachInterrupt(digitalPinToInterrupt(LIGHT_SENSOR_PIN),
+                    EnergyMeter::LightPulseIsr,
+                    RISING);
 
     uptimeCtrTimer.attach_ms(1000, uptimeCtrCb);
 
@@ -183,7 +172,6 @@ loop (
     void
     )
 {
-    static unsigned long lastIsrTime = 0;
     unsigned now;
     now = millis();
 
@@ -205,23 +193,5 @@ loop (
 
     webserverLoop();
 
-    if (Isr == ISR_ACTIVE)
-    {
-        Isr = ISR_HOLD;
-        lastIsrTime = now;
-
-        gateCtl.lightPulseCounter++;
-        gateCtl.timeBetweenPulses = now - gateCtl.lastPulseTs;
-        gateCtl.lastPulseTs = now;
-        gateCtl.timeSincePulse = 0;
-    }
-
-    if ((Isr == ISR_HOLD) && (now - lastIsrTime) >= PULSE_HOLDOFF_MS)
-    {
-        //
-        // Re-enable Interrupt
-        //
-        Isr = ISR_WAIT;
-        attachInterrupt(digitalPinToInterrupt(LIGHT_SENSOR_PIN), LightSensorIsr, RISING);
-    }
+    EnergyMeter::GetInstance()->Loop(now);
 }

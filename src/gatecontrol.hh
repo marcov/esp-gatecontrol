@@ -1,6 +1,4 @@
-#ifndef __GATECONTROL_HH__
-#define __GATECONTROL_HH__
-
+#pragma once
 #include "config.h"
 
 class GateControl
@@ -16,6 +14,7 @@ private:
     }
 
 public:
+
     typedef enum {
         GATE_CANCELLINO = 0,
         GATE_CANCELLONE = 1,
@@ -25,13 +24,6 @@ public:
     unsigned uptime;
     unsigned lastOpened[numOfGates];
     unsigned openCtr[numOfGates];
-    //
-    // Light pulse
-    //
-    unsigned long lightPulseCounter;
-    unsigned long timeBetweenPulses;
-    unsigned long lastPulseTs;
-    unsigned long timeSincePulse;
 
     void updateCounters() {
         uptime++;
@@ -39,7 +31,6 @@ public:
         for (auto &t :lastOpened) {
             t++;
         }
-        timeSincePulse++;
 #if defined(MQTT_ENABLED)
     String msg(uptimeSeconds);
 
@@ -70,5 +61,3 @@ public:
 };
 
 extern GateControl gateCtl;
-
-#endif /* #ifndef __GATECONTROL_HH__ */
