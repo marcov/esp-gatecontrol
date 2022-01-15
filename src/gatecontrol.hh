@@ -4,11 +4,11 @@
 class GateControl
 {
 private:
-    void relayPulse(unsigned pin)
+    void relayPulse(unsigned pin, unsigned int pulseDuration)
     {
         digitalWrite(pin, LOW);
         digitalWrite(GPIO_LED, LOW);
-        delay(RELAY_PULSE_MS);
+        delay(pulseDuration);
         digitalWrite(pin, HIGH);
         digitalWrite(GPIO_LED, HIGH);
     }
@@ -22,13 +22,13 @@ public:
 
     static const char numOfGates = 2;
     unsigned uptime;
-    unsigned lastOpened[numOfGates];
+    unsigned lastOpenedSeconds[numOfGates];
     unsigned openCtr[numOfGates];
 
     void updateCounters() {
         uptime++;
 
-        for (auto &t :lastOpened) {
+        for (auto &t :lastOpenedSeconds) {
             t++;
         }
 #if defined(MQTT_ENABLED)
@@ -52,8 +52,8 @@ public:
                 return -1;
         }
 
-        relayPulse(pin);
-        lastOpened[theGate] = 0;
+        relayPulse(pin, RELAY_OPEN_PULSE_MS);
+        lastOpenedSeconds[theGate] = 0;
         openCtr[theGate]++;
 
         return 0;

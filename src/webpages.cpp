@@ -175,7 +175,7 @@ serveJsonData (
     //
     // Gates Info
     //
-    for (auto v : gateCtl.lastOpened) {
+    for (auto v : gateCtl.lastOpenedSeconds) {
         tmp += secondsToTime(v, false) + ";";
     }
     jsonDoc["lastOpened"] = tmp;

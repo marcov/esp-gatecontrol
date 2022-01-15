@@ -5,7 +5,7 @@
 #define CANCELLINO_PIN      12 // D6
 #define LIGHT_SENSOR_PIN    5  // D1
 #define CANCELLONE_PIN      4  // D2
-#define RELAY_PULSE_MS      700
+#define RELAY_OPEN_PULSE_MS       700
 
 #define FW_VERSION          "4.1"
 // Changelog:
