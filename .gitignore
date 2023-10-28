@@ -11,3 +11,4 @@
 /.pio/
 /.tags
 /compile_commands.json
+/.cache
