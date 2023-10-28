@@ -204,28 +204,49 @@ serveMetrics (
 {
     String content;
     unsigned long pulseCounter;
-    unsigned long timeBetweenPulses;
+    unsigned long timeBetweenPulsesMs;
     unsigned long timeSinceLastPulse;
+    constexpr unsigned long whInPulse = 10;
 
     EnergyMeter::GetInstance()->GetCounters(&pulseCounter,
-                                            &timeBetweenPulses,
+                                            &timeBetweenPulsesMs,
                                             &timeSinceLastPulse);
 
-    content = "# HELP home_energy_time_between_pulses Time in ms between the last two pulses.\n";
-    content += "# TYPE home_energy_time_between_pulses gauge\n";
-    content += "home_energy_time_between_pulses " + String(timeBetweenPulses) + "\n";
+    const unsigned long watts = whInPulse * 3600 * 1000 / timeBetweenPulsesMs;
 
-    content += "# HELP home_energy_time_since_last_pulse Time in ms since last observed pulse.\n";
-    content += "# TYPE home_energy_time_since_last_pulse gauge\n";
-    content += "home_energy_time_since_last_pulse " + String(timeSinceLastPulse) + "\n";
+    content = R"(
+# HELP home_energy_watts Instantaneous Watts absorbed
+# TYPE home_energy_watts gauge
+home_energy_watts )" +
+              String(watts);
 
-    content += "# HELP home_energy_pulse_counter The number of pulses measured.\n";
-    content += "# TYPE home_energy_pulse_counter counter\n";
-    content += "home_energy_pulse_counter " + String(pulseCounter) + "\n";
+    content += R"(
 
-    content += "# HELP home_energy_uptime The system uptime in seconds.\n";
-    content += "# TYPE home_energy_uptime counter\n";
-    content += "home_energy_uptime " + String(gateCtl.uptime) + "\n";
+# HELP home_energy_time_between_pulses Time in ms between the last two pulses
+# TYPE home_energy_time_between_pulses gauge
+home_energy_time_between_pulses )" +
+               String(timeBetweenPulsesMs);
+
+    content += R"(
+
+# HELP home_energy_time_since_last_pulse Time in ms since last observed pulse
+# TYPE home_energy_time_since_last_pulse gauge
+home_energy_time_since_last_pulse )" +
+               String(timeSinceLastPulse);
+
+    content += R"(
+
+# HELP home_energy_pulse_counter The number of pulses measured
+# TYPE home_energy_pulse_counter counter
+home_energy_pulse_counter )" +
+               String(pulseCounter);
+
+    content += R"(
+
+# HELP home_energy_uptime The system uptime in seconds.
+# TYPE home_energy_uptime counter
+home_energy_uptime )" +
+               String(gateCtl.uptime);
 
     pHttpServer->send(200, "text/plain", content);
 }
