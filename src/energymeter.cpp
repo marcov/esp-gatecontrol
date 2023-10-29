@@ -1,4 +1,5 @@
 #include "energymeter.hh"
+#include "c_types.h"
 
 #define ENABLE_DEBUG 0
 
@@ -15,7 +16,7 @@ EnergyMeter::EnergyMeter (
     )
 {
     m_lightPulseCounter = 0;
-    m_timeBetweenPulses = PULSE_HOLDOFF_MS(500);
+    m_TBetweenPulsesMs = PULSE_HOLDOFF_MS(500);
     m_lastPulseTs = 0;
     m_timeSincePulse = PULSE_HOLDOFF_MS(500);
 
@@ -43,7 +44,7 @@ EnergyMeter::IncrementCounters (
 }
 
 void
-ICACHE_RAM_ATTR
+IRAM_ATTR
 EnergyMeter::LightPulseIsr (
     void
     )
@@ -63,7 +64,7 @@ EnergyMeter::Loop (
         m_LastIsrTime = Now;
 
         m_lightPulseCounter++;
-        m_timeBetweenPulses = Now - m_lastPulseTs;
+        m_TBetweenPulsesMs = Now - m_lastPulseTs;
         m_lastPulseTs = Now;
         m_timeSincePulse = 0;
     }
@@ -83,11 +84,11 @@ EnergyMeter::Loop (
 void
 EnergyMeter::GetCounters (
     ArduinoJson::JsonDocument& jsonDoc
-    )
+    ) const
 {
-    jsonDoc["pulseCounter"] = String(m_lightPulseCounter);
-    jsonDoc["timeBetweenPulses"] = String(m_timeBetweenPulses);
-    jsonDoc["timeSincePulse"] = String(m_timeSincePulse);
+    jsonDoc["pulseCounter"] = m_lightPulseCounter;
+    jsonDoc["timeBetweenPulses"] = m_TBetweenPulsesMs;
+    jsonDoc["timeSincePulse"] = m_timeSincePulse;
 }
 
 void
@@ -95,9 +96,9 @@ EnergyMeter::GetCounters (
     unsigned long* PulseCounter,
     unsigned long* TimeBetweenPulses,
     unsigned long* TimeSinceLastPulse
-    )
+    ) const
 {
     *PulseCounter = m_lightPulseCounter;
-    *TimeBetweenPulses = m_timeBetweenPulses;
+    *TimeBetweenPulses = m_TBetweenPulsesMs;
     *TimeSinceLastPulse = m_timeSincePulse;
 }

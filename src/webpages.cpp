@@ -1,6 +1,5 @@
 #include "webpages.h"
 #include "webserver.h"
-#include "ArduinoJson.h"
 #include "credentials.hh"
 #include "gatecontrol.hh"
 #include "energymeter.hh"
@@ -164,36 +163,37 @@ serveJsonData (
     )
 {
     ArduinoJson::StaticJsonDocument<512> jsonDoc;
-    String tmp;
 
     //
     // FW / uptime info
     //
-    jsonDoc["fwUptime"]  =  secondsToTime(gateCtl.uptime, false);
+    jsonDoc["fwUptime"] = secondsToTime(gateCtl.uptime, false);
     jsonDoc["fwVersion"] = "v" FW_VERSION " " __DATE__;
 
     //
     // Gates Info
     //
+    JsonArray lastOpened = jsonDoc.createNestedArray("lastOpened");
     for (auto v : gateCtl.lastOpenedSeconds) {
-        tmp += secondsToTime(v, false) + ";";
+        lastOpened.add(secondsToTime(v, false));
     }
-    jsonDoc["lastOpened"] = tmp;
 
-    tmp = "";
+    JsonArray openCtr = jsonDoc.createNestedArray("openCtr");
     for (auto v : gateCtl.openCtr) {
-        tmp += String(v) + ";";
+        openCtr.add(v);
     }
-    jsonDoc["openCtr"] = tmp;
 
-    EnergyMeter::GetInstance()->GetCounters(jsonDoc);
+    EnergyMeter *em = EnergyMeter::GetInstance();
+
+    em->GetCounters(jsonDoc);
+    jsonDoc["power"] = em->GetPower();
 
     //
     // Serialize and send
     //
-    tmp = "";
-    serializeJson(jsonDoc, tmp);
-    pHttpServer->send(200, "text/json", tmp);
+    String serialized;
+    serializeJson(jsonDoc, serialized);
+    pHttpServer->send(200, "text/json", serialized);
 }
 
 static
@@ -203,22 +203,19 @@ serveMetrics (
     )
 {
     String content;
-    unsigned long pulseCounter;
-    unsigned long timeBetweenPulsesMs;
-    unsigned long timeSinceLastPulse;
-    constexpr unsigned long whInPulse = 10;
-
-    EnergyMeter::GetInstance()->GetCounters(&pulseCounter,
-                                            &timeBetweenPulsesMs,
-                                            &timeSinceLastPulse);
-
-    const unsigned long watts = whInPulse * 3600 * 1000 / timeBetweenPulsesMs;
+    EnergyMeter *em = EnergyMeter::GetInstance();
+    const unsigned long power = em->GetPower();
 
     content = R"(
 # HELP home_energy_watts Instantaneous Watts absorbed
 # TYPE home_energy_watts gauge
 home_energy_watts )" +
-              String(watts);
+              String(power);
+
+    unsigned long pulseCounter;
+    unsigned long timeBetweenPulsesMs;
+    unsigned long timeSinceLastPulse;
+    em->GetCounters(&pulseCounter, &timeBetweenPulsesMs, &timeSinceLastPulse);
 
     content += R"(
 

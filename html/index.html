@@ -161,6 +161,11 @@
         </a>
       </div>
 
+      <div class="grid-item">
+        <p>Power: <span id="power">&nbsp;</span> W
+        </p>
+      </div>
+
       <div id="footerContainer">
         Up&nbsp;<span id="fwUptime"></span>
         <br>
@@ -232,6 +237,7 @@
         var currentState = NaN;
         var fwVersion = "ERR";
         var fwUptime = "ERR";
+        var power = "ERR";
         var last = [];
         var ctr = [];
 
@@ -248,8 +254,11 @@
             //currentState = data.currentState;
             fwUptime = data.fwUptime;
             fwVersion = data.fwVersion;
-            last = data.lastOpened.split(";");
-            ctr = data.openCtr.split(";");
+
+            last = data.lastOpened;
+            ctr = data.openCtr;
+
+            power = data.power;
 
             document.getElementById("res0").innerHTML = "";
           } else {
@@ -263,6 +272,8 @@
           document.getElementById("last1").innerHTML = last[1];
           document.getElementById("ctr0").innerHTML = ctr[0];
           document.getElementById("ctr1").innerHTML = ctr[1];
+
+          document.getElementById("power").innerHTML = power;
 
           setTimeout(getJsonData, 30000);
         };

@@ -33,14 +33,27 @@ public:
     void
     GetCounters (
         ArduinoJson::JsonDocument& jsonDoc
-        );
+        ) const;
 
     void
     GetCounters (
         unsigned long* PulseCounter,
         unsigned long* TimeBetweenPulses,
         unsigned long* TimeSinceLastPulse
-        );
+        ) const;
+
+    unsigned long
+    GetPower (
+            void
+            ) const
+    {
+        if (m_TBetweenPulsesMs == 0)
+        {
+            return 0;
+        }
+
+        return k_WhInOnePulse * 3600 * 1000 / m_TBetweenPulsesMs;
+    }
 
 private:
     EnergyMeter (
@@ -71,7 +84,6 @@ public:
 
     static
     void
-    ICACHE_RAM_ATTR
     LightPulseIsr (
         void
         );
@@ -86,8 +98,9 @@ private:
 
     IsrState m_IsrState;
     unsigned long m_lightPulseCounter;
-    unsigned long m_timeBetweenPulses;
+    unsigned long m_TBetweenPulsesMs;
     unsigned long m_lastPulseTs;
     unsigned long m_timeSincePulse;
     unsigned long m_LastIsrTime;
+    static constexpr unsigned long k_WhInOnePulse = 10;
 };
