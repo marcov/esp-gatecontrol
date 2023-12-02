@@ -23,13 +23,22 @@
     <title>Apertura Cancelli</title>
 
     <style>
-
-     body {
+      body {
         font-family: "Segoe UI",Arial,sans-serif;
         font-size: 200%;
         background-color:  #2B303A;
         color: white;
         border: none;
+        overflow-y: hidden;
+      }
+
+      #power {
+        font-size: initial;
+      }
+
+      pre {
+        font-size: 0.6rem;
+        letter-spacing: initial;
       }
 
       .grid-container {
@@ -162,8 +171,9 @@
       </div>
 
       <div class="grid-item">
-        <p>Power: <span id="power">&nbsp;</span> W
-        </p>
+        <span id="power">&nbsp;</span>
+
+        <pre id="histogram">&nbsp;</pre>
       </div>
 
       <div id="footerContainer">
@@ -238,6 +248,7 @@
         var fwVersion = "ERR";
         var fwUptime = "ERR";
         var power = "ERR";
+        var histogram = "          *   *\n    * *   * * *   * * *\n* * * * * * * * * * * * * * * * * * * *\n- - - - - - - - - - - - - - - - - - - -";
         var last = [];
         var ctr = [];
 
@@ -259,6 +270,7 @@
             ctr = data.openCtr;
 
             power = data.power;
+            histogram = data.histogram;
 
             document.getElementById("res0").innerHTML = "";
           } else {
@@ -273,7 +285,8 @@
           document.getElementById("ctr0").innerHTML = ctr[0];
           document.getElementById("ctr1").innerHTML = ctr[1];
 
-          document.getElementById("power").innerHTML = power;
+          document.getElementById("power").innerHTML = "Power: " + power + " W";
+          document.getElementById("histogram").innerHTML = histogram;
 
           setTimeout(getJsonData, 30000);
         };

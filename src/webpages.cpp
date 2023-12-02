@@ -162,7 +162,7 @@ serveJsonData (
     void
     )
 {
-    ArduinoJson::StaticJsonDocument<512> jsonDoc;
+    ArduinoJson::StaticJsonDocument<2048> jsonDoc;
 
     //
     // FW / uptime info
@@ -186,7 +186,9 @@ serveJsonData (
     EnergyMeter *em = EnergyMeter::GetInstance();
 
     em->GetCounters(jsonDoc);
-    jsonDoc["power"] = em->GetPower();
+    jsonDoc["power"] = em->GetLastPower();
+
+    jsonDoc["histogram"] = em->GetHistogram();
 
     //
     // Serialize and send
@@ -204,7 +206,7 @@ serveMetrics (
 {
     String content;
     EnergyMeter *em = EnergyMeter::GetInstance();
-    const unsigned long power = em->GetPower();
+    const unsigned long power = em->GetLastPower();
 
     content = R"(
 # HELP home_energy_watts Instantaneous Watts absorbed

@@ -67,6 +67,8 @@ EnergyMeter::Loop (
         m_TBetweenPulsesMs = Now - m_lastPulseTs;
         m_lastPulseTs = Now;
         m_timeSincePulse = 0;
+
+        m_Measures.AddMeasure(GetLastPower(), m_TBetweenPulsesMs);
     }
 
     if ((m_IsrState == ISR_HOLD) && (Now - m_LastIsrTime) >= PULSE_HOLDOFF_MS(WATTHOURS_MAX))
@@ -101,4 +103,12 @@ EnergyMeter::GetCounters (
     *PulseCounter = m_lightPulseCounter;
     *TimeBetweenPulses = m_TBetweenPulsesMs;
     *TimeSinceLastPulse = m_timeSincePulse;
+}
+
+String
+EnergyMeter::GetHistogram (
+        void
+        ) const
+{
+    return m_Measures.GetHistogram();
 }

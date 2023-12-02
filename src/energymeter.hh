@@ -2,6 +2,8 @@
 #include "config.h"
 #include "Arduino.h"
 #include "ArduinoJson.h"
+#include "measures_storage.hpp"
+#include <atomic>
 
 class EnergyMeter
 {
@@ -43,7 +45,7 @@ public:
         ) const;
 
     unsigned long
-    GetPower (
+    GetLastPower (
             void
             ) const
     {
@@ -54,6 +56,11 @@ public:
 
         return k_WhInOnePulse * 3600 * 1000 / m_TBetweenPulsesMs;
     }
+
+    String
+    GetHistogram (
+            void
+            ) const;
 
 private:
     EnergyMeter (
@@ -89,18 +96,20 @@ public:
         );
 
 private:
-    typedef enum
+    typedef enum : int
     {
         ISR_WAIT,
         ISR_ACTIVE,
         ISR_HOLD,
     } IsrState;
 
-    IsrState m_IsrState;
+    static constexpr unsigned long k_WhInOnePulse = 10;
+
+    std::atomic<IsrState> m_IsrState;
     unsigned long m_lightPulseCounter;
     unsigned long m_TBetweenPulsesMs;
     unsigned long m_lastPulseTs;
     unsigned long m_timeSincePulse;
     unsigned long m_LastIsrTime;
-    static constexpr unsigned long k_WhInOnePulse = 10;
+    MeasurementBuffer m_Measures;
 };
