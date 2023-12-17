@@ -12,3 +12,4 @@
 /.tags
 /compile_commands.json
 /.cache
+/compiler_defines.h
