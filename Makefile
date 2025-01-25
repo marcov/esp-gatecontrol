@@ -1,5 +1,5 @@
 ENV := d1mini
-OTA_HOSTNAME := cancel.lan
+OTA_HOSTNAME := 10.0.0.200
 TOPLEVEL_SOURCE_DIRS := \
 	src \
 	esp-scripts \
