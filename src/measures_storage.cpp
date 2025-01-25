@@ -1,6 +1,5 @@
 #include "measures_storage.hpp"
-#include <algorithm>
-#include <string>
+#include "time_helpers.hpp"
 
 void MeasurementBuffer::AddMeasure(unsigned int value, unsigned long duration_ms)
 {
@@ -10,7 +9,7 @@ void MeasurementBuffer::AddMeasure(unsigned int value, unsigned long duration_ms
         return;
     }
 
-    m_Buffer[m_CurrentPos] = {value, TIME_MS_TO_S(duration_ms)};
+    m_Buffer[m_CurrentPos] = {value, static_cast<unsigned int>(TIME_MS_TO_S(duration_ms))};
     m_CurrentPos = (m_CurrentPos + 1) % m_Buffer.size();
 }
 
@@ -28,8 +27,8 @@ String MeasurementBuffer::GetHistogram(void) const
         if (m.duration_s != 0)
         {
             unsigned int binIndex = static_cast<int>(m.value / k_BindWidth);
-            binIndex = max(0U, binIndex);
-            binIndex = min(binIndex, k_HistogramBinsCount - 1);
+            binIndex = std::max(0U, binIndex);
+            binIndex = std::min(binIndex, k_HistogramBinsCount - 1);
             histogram[binIndex] += m.duration_s;
         }
     }
@@ -80,7 +79,11 @@ String MeasurementBuffer::GetHistogram(void) const
         }
         else
         {
+#ifdef UNIT_TESTS
+            output += std::to_string(digit);
+#else
             output += String(digit);
+#endif
         }
 
         prev_digit = digit;
@@ -88,3 +91,33 @@ String MeasurementBuffer::GetHistogram(void) const
 
     return output;
 }
+
+#ifdef UNIT_TESTS
+#include <iostream>
+#include <random>
+void MeasurementBuffer::TestHistogram(void)
+{
+    // Randomize m_Buffer content
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<unsigned int> valueDist(1, k_MaxMeasureValue);
+    std::uniform_int_distribution<unsigned int> durationDist(1, 200);
+
+    for (auto &m : m_Buffer)
+    {
+        m.value = valueDist(gen);
+        m.duration_s = durationDist(gen);
+    }
+
+    // Call GetHistogram and print the output
+    std::string histogramOutput = GetHistogram();
+    std::cout << "Generated Histogram:\n" << histogramOutput << std::endl;
+}
+
+int main()
+{
+    MeasurementBuffer mb;
+    mb.TestHistogram();
+    return 0;
+}
+#endif
